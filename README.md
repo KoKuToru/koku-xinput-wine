@@ -1,4 +1,4 @@
-koko-xinput-wine
+koku-xinput-wine
 ================
 
 Adds xinput support to wine, without changing the source of wine.
