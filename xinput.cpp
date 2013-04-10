@@ -8,6 +8,8 @@ using namespace std;
 bool active = true;
 static vector<SDL_Joystick*> gamepads_sdl;
 
+GUID GUID_NULL = {0,0,0,{0,0,0,0,0,0,0,0}};
+
 void GamepadInitSDL()
 {
 	static bool inited = false;

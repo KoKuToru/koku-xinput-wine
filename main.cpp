@@ -1,28 +1,12 @@
 #include "xinput.h"
 #include <string>
-#include <dlfcn.h>
-#include <unistd.h>
-#include <sys/mman.h>
-#include <limits.h>
-#ifndef PAGESIZE
-#define PAGESIZE 4096
-#endif
+#include "main.h"
+#include "device.h"
 using namespace std;
 
-struct __attribute__((packed)) Sjmp
-{
-	unsigned char op;
-	void* value;
-
-	Sjmp(void* value):
-		op(0xE9), value((void*)((long)value-(long)&op-5))
-	{
-		/*
-		 This JITs a X86 jmp instruction
-		 */
-	}
-};
-
+#ifdef __LP64__
+#warning "Add 64bit support !"
+#endif
 
 extern "C" void *wine_dll_load( const char *filename, char *error, int errorsize, int *file_exists )
 {
@@ -52,7 +36,7 @@ extern "C" void *wine_dll_load( const char *filename, char *error, int errorsize
 			{"XInputSetState"                  , (void*)&XInputSetState}
 		};
 		//hook functions
-		for(int i = 0; i < 7; ++i)
+		for(int i = 0; i < 8; ++i)
 		{
 			addr = long(dlsym(result, list[i].first.c_str()));
 			if (addr != 0)
@@ -64,4 +48,10 @@ extern "C" void *wine_dll_load( const char *filename, char *error, int errorsize
 			}
 		}
 	}
+	if (string("oel32.dll") ==  filename)
+	{
+		DeviceInit(result);
+	}
+
+	return result;
 }

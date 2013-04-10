@@ -1,6 +1,6 @@
 #ifndef KOKU_XINPUT_H
 #define KOKU_XINPUT_H
-#define WINAPI
+#define WINAPI  __attribute__((__stdcall__))
 #define ERROR_SUCCESS 			 0x0
 #define ERROR_DEVICE_NOT_CONNECTED 	 0x48f
 #define ERROR_EMPTY					0x10D2
@@ -88,14 +88,12 @@ struct GUID
   unsigned char   Data4[8];
 };
 
-GUID GUID_NULL = {0,0,0,{0,0,0,0,0,0,0,0}};
-
-void XInputEnable(bool enable);
-unsigned XInputGetAudioDeviceIds(unsigned dwUserIndex, short* pRenderDeviceId, unsigned *pRenderCount, short* pCaptureDeviceId, unsigned *pCaptureCount);
-unsigned XInputGetBatteryInformation(unsigned dwUserIndex, char devType, XINPUT_BATTERY_INFORMATION *pBatteryInformation);
-unsigned XInputGetCapabilities(unsigned dwUserIndex, unsigned dwFlags, XINPUT_CAPABILITIES *pCapabilities);
-unsigned XInputGetDSoundAudioDeviceGuids(unsigned dwUserIndex, GUID* pDSoundRenderGuid, GUID* pDSoundCaptureGuid);
-unsigned XInputGetKeystroke(unsigned dwUserIndex, unsigned dwReserved, XINPUT_KEYSTROKE* pKeystroke);
-unsigned XInputGetState(unsigned dwUserIndex, XINPUT_STATE *pState);
-unsigned XInputSetState(unsigned dwUserIndex, XINPUT_VIBRATION *pVibration);
+void WINAPI XInputEnable(bool enable);
+unsigned WINAPI XInputGetAudioDeviceIds(unsigned dwUserIndex, short* pRenderDeviceId, unsigned *pRenderCount, short* pCaptureDeviceId, unsigned *pCaptureCount);
+unsigned WINAPI XInputGetBatteryInformation(unsigned dwUserIndex, char devType, XINPUT_BATTERY_INFORMATION *pBatteryInformation);
+unsigned WINAPI XInputGetCapabilities(unsigned dwUserIndex, unsigned dwFlags, XINPUT_CAPABILITIES *pCapabilities);
+unsigned WINAPI XInputGetDSoundAudioDeviceGuids(unsigned dwUserIndex, GUID* pDSoundRenderGuid, GUID* pDSoundCaptureGuid);
+unsigned WINAPI XInputGetKeystroke(unsigned dwUserIndex, unsigned dwReserved, XINPUT_KEYSTROKE* pKeystroke);
+unsigned WINAPI XInputGetState(unsigned dwUserIndex, XINPUT_STATE *pState);
+unsigned WINAPI XInputSetState(unsigned dwUserIndex, XINPUT_VIBRATION *pVibration);
 #endif
