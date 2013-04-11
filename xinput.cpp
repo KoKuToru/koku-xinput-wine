@@ -163,6 +163,7 @@ void GamepadInitSDL()
 						char c = line[pos++];
 						if (c == '&')
 						{
+							pos--;
 							break;
 						}
 						if (c == '*')
