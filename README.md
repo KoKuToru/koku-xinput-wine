@@ -69,7 +69,7 @@ Bit mask are useful for hats, hats return 1 value for 4 different directions.
     
 ### Forth config-parameter (optional)
 
-Starts with a '+', followed by a integer number.
+Starts with a '*', followed by a integer number.
 Multiplys the result with the value.
 
     A02*-1
