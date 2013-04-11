@@ -19,3 +19,5 @@ struct __attribute__((packed)) Sjmp
 		 */
 	}
 };
+
+extern bool debug;
