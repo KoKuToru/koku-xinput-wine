@@ -1,8 +1,14 @@
 #include "xinput.h"
 #include "config.h"
-
+#include "main.h"
 #include <SDL/SDL.h>
 #include <vector>
+#include <iostream>
+#include <fstream>
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <iomanip>
 using namespace std;
 
 bool active = true;
@@ -27,6 +33,49 @@ void GamepadInitSDL()
 		if (joy)
 		{
 			gamepads_sdl.push_back(joy);
+		}
+	}
+	//load config:
+	string path = string(getenv("HOME"))+"/.config/koku-xinput-wine.ini";
+	ifstream iconfig(path.c_str(), ifstream::in);
+	if (iconfig.is_open())
+	{
+		if (debug)
+		{
+			clog << "koku-xinput-wine: Load config \"" << path << "\"" << endl;
+		}
+		//load c
+
+		iconfig.close();
+	}
+	else
+	{
+		if (debug)
+		{
+			clog << "koku-xinput-wine: Save default config \"" << path << "\"" << endl;
+		}
+		//write default config
+		ofstream oconfig(path.c_str(), ifstream::out);
+		if (oconfig.is_open())
+		{
+			oconfig << ";koku-xinput-wine config, for more information see https://github.com/KoKuToru/koku-xinput-wine" << endl;
+			for(int i = 0; i < 20; ++i)
+			{
+				oconfig << left << setw(30) << mapping[i].name << " = " << right << settings[i].type << setfill('0') << setw(2) << int(settings[i].id);
+				if (settings[i].mask != 0xFFFF)
+				{
+					oconfig << "&0x" << setfill('0') << setw(4) << hex << settings[i].mask << setfill(' ') << dec;
+				}
+				if (settings[i].scale != 1)
+				{
+					oconfig << "*" << settings[i].scale;
+				}
+				oconfig << endl;
+			}
+			oconfig.close();
+		}else
+		{
+			clog << "koku-xinput-wine: couldn't open file" << endl;
 		}
 	}
 }
