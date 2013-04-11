@@ -13,7 +13,7 @@ bool debug = false;
 
 extern "C" void *wine_dll_load( const char *filename, char *error, int errorsize, int *file_exists )
 {
-	debug = getenv( "KOKU_XINPUT_DEBUG" ) != 0;
+	debug = (getenv("KOKU_XINPUT_DEBUG") != 0);
 
 	/*
 	 This is a wine intern function,

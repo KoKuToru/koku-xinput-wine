@@ -47,7 +47,10 @@ void DeviceInit(void* handle)
 
 		new ((void*)addr) Sjmp((void*)CoSetProxyBlanket);
 	}
-	clog << endl;
+	if (debug)
+	{
+		clog << endl;
+	}
 }
 
 void* WINAPI CoSetProxyBlanket(void* pProxy, unsigned dwAuthnSvc, unsigned dwAuthzSvc, void* pServerPrincName, unsigned dwAuthnLevel, unsigned dwImpLevel, void* pAuthInfo, unsigned dwCapabilities)

@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <iomanip>
+#include <sstream>
 using namespace std;
 
 bool active = true;
@@ -44,7 +45,174 @@ void GamepadInitSDL()
 		{
 			clog << "koku-xinput-wine: Load config \"" << path << "\"" << endl;
 		}
-		//load c
+		//load config
+
+		while (iconfig.good())
+		{
+			string line;
+			std::getline(iconfig, line);
+
+			if (line.size() == 0)
+			{
+				//empty line
+				continue;
+			}
+
+			if (line[0] == ';')
+			{
+				//comment
+				continue;
+			}
+
+			int pos = 0;
+			//read until not A-Z a-z 0-9
+			string name;
+			while(pos < line.size())
+			{
+				char c = line[pos++];
+				if (((c >= 'A')&&(c <= 'Z')) ||
+					((c >= 'a')&&(c <= 'z')) ||
+					((c >= '0')&&(c <= '9')) || (c == '_'))
+				{
+					name += c;
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			//search name in mapping
+			for(int i = 0; i < 20; ++i)
+			{
+				if (mapping[i].name == name)
+				{
+					//name found
+					if (debug)
+					{
+						clog << "koku-xinput-wine: Load parameter for \"" << name << "\"" << endl;
+					}
+					//read until "="
+					while(pos < line.size())
+					{
+						char c = line[pos++];
+						if (c == '=')
+						{
+							break;
+						}
+					}
+
+					//read until A-Z a-z 0-9
+					while(pos < line.size())
+					{
+						char c = line[pos++];
+						if (((c >= 'A')&&(c <= 'Z')) ||
+							((c >= 'a')&&(c <= 'z')) ||
+							((c >= '0')&&(c <= '9')))
+						{
+							--pos;
+							break;
+						}
+					}
+
+					if (pos >= line.size()) break;
+
+					//read the type
+					settings[i].type  = line[pos++];
+					settings[i].mask  = short(0xFFFF);
+					settings[i].scale = 1;
+					settings[i].id    = 0;
+
+					if (debug)
+					{
+						switch(settings[i].type)
+						{
+							case 'A':
+								clog << "koku-xinput-wine: Type = Axis" << endl;
+								break;
+							case 'B':
+								clog << "koku-xinput-wine: Type = Buttons" << endl;
+								break;
+							case 'H':
+								clog << "koku-xinput-wine: Type = Hats" << endl;
+								break;
+							default:
+								clog << "koku-xinput-wine: Type = Unknow" << endl;
+								break;
+						}
+					}
+
+					if (pos >= line.size()) break;
+
+					//parse number
+					{
+						stringstream ss(string(line.c_str()+pos, line.size()-pos));
+						int id;
+						ss >> id;
+						settings[i].id = id;
+					}
+
+					if (debug)
+					{
+						clog << "koku-xinput-wine: Id   = " << right << setw(2) << setfill('0') << int(settings[i].id) << setfill(' ') << setw(0) << left << endl;
+					}
+
+					//read until '&'
+					while(pos < line.size())
+					{
+						char c = line[pos++];
+						if (c == '&')
+						{
+							break;
+						}
+					}
+
+					if (line[pos++] != '0') break;
+					if (line[pos++] != 'x') break;
+
+					if (pos >= line.size()) break;
+
+					//parse number
+					{
+						stringstream ss(string(line.c_str()+pos, line.size()-pos));
+						int mask;
+						ss >> hex >> mask >> dec;
+						settings[i].mask = short(mask);
+					}
+
+					if (debug)
+					{
+						clog << "koku-xinput-wine: Mask = 0x" << right << setw(4) << setfill('0') << hex << settings[i].mask << setfill(' ') << dec << setw(0) << left << endl;
+					}
+
+					//read until '*'
+					while(pos < line.size())
+					{
+						char c = line[pos++];
+						if (c == '*')
+						{
+							break;
+						}
+					}
+
+					if (pos >= line.size()) break;
+
+					//parse number
+					{
+						stringstream ss(string(line.c_str()+pos, line.size()-pos));
+						ss >> settings[i].scale;
+					}
+
+					if (debug)
+					{
+						clog << "koku-xinput-wine: Scale = " <<  settings[i].scale << endl;
+					}
+
+					//exit loop
+					break;
+				}
+			}
+		}
 
 		iconfig.close();
 	}
