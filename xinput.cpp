@@ -1,7 +1,13 @@
 #include "xinput.h"
 #include "config.h"
 #include "main.h"
+#ifndef USE_SDL2
 #include <SDL/SDL.h>
+#define SDL_INIT_HAPTIC 0
+#else
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_haptic.h>
+#endif
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -24,9 +30,10 @@ void GamepadInitSDL()
 	{
 		return;
 	}
+
 	inited = true;
 	//init:
-	SDL_Init(SDL_INIT_JOYSTICK);
+	SDL_Init(SDL_INIT_JOYSTICK|SDL_INIT_HAPTIC);
 	SDL_JoystickEventState(SDL_IGNORE);
 	for(int i = 0; i < SDL_NumJoysticks(); ++i)
 	{
@@ -36,6 +43,24 @@ void GamepadInitSDL()
 			gamepads_sdl.push_back(joy);
 		}
 	}
+
+	XINPUT_VIBRATION welcome_vibration;
+	welcome_vibration.wLeftMotorSpeed = 65535;
+	welcome_vibration.wRightMotorSpeed = 0;
+	XInputSetState(0, &welcome_vibration);
+	SDL_Delay(250);
+	welcome_vibration.wLeftMotorSpeed = 0;
+	welcome_vibration.wRightMotorSpeed = 0;
+	XInputSetState(0, &welcome_vibration);
+	SDL_Delay(250);
+	welcome_vibration.wLeftMotorSpeed = 0;
+	welcome_vibration.wRightMotorSpeed = 65535;
+	XInputSetState(0, &welcome_vibration);
+	SDL_Delay(250);
+	welcome_vibration.wLeftMotorSpeed = 0;
+	welcome_vibration.wRightMotorSpeed = 0;
+	XInputSetState(0, &welcome_vibration);
+
 	//load config:
 	string path = string(getenv("HOME"))+"/.config/koku-xinput-wine.ini";
 	ifstream iconfig(path.c_str(), ifstream::in);
@@ -263,6 +288,13 @@ void GamepadInitSDL()
 void WINAPI XInputEnable(bool enable)
 {
 	active = enable;
+	if (!active)
+	{
+		XINPUT_VIBRATION stop_vibration;
+		stop_vibration.wLeftMotorSpeed = 0;
+		stop_vibration.wRightMotorSpeed = 0;
+		XInputSetState(0, &stop_vibration);
+	}
 }
 
 unsigned WINAPI XInputGetAudioDeviceIds(unsigned dwUserIndex, short* pRenderDeviceId, unsigned *pRenderCount, short* pCaptureDeviceId, unsigned *pCaptureCount)
@@ -425,6 +457,59 @@ unsigned WINAPI XInputSetState(unsigned dwUserIndex, XINPUT_VIBRATION *pVibratio
 	if (active)
 	{
 		//Sorry no vibration in SDL1.2, maybe SDL2
+		#ifdef USE_SDL2
+		static SDL_Haptic *haptic = 0;
+		static int effect_id[2];
+
+		SDL_HapticEffect effect[2];
+		memset(&effect, 0, sizeof(SDL_HapticEffect)*2);
+
+		//#define USE_CONSTANT .. not working no idea why
+
+		#ifdef USE_CONSTANT
+		effect[0].type = SDL_HAPTIC_CONSTANT;
+		effect[0].constant.direction.type = SDL_HAPTIC_CARTESIAN;
+		effect[0].constant.direction.dir[0] =  0;
+		effect[0].constant.direction.dir[1] =  1;
+		effect[0].constant.level = pVibration->wLeftMotorSpeed>>1;
+		effect[0].constant.length = SDL_HAPTIC_INFINITY;
+		effect[0].constant.attack_length = 1000; // Takes 1 second to get max strength
+		effect[0].constant.fade_length = 1000; // Takes 1 second to fade away
+
+		effect[1] = effect[0];
+		effect[1].constant.direction.dir[0] = -1;
+		effect[1].periodic.magnitude = pVibration->wRightMotorSpeed>>1;
+		#else
+		effect[0].type = SDL_HAPTIC_SINE;
+		effect[0].constant.direction.type = SDL_HAPTIC_CARTESIAN;
+		effect[0].constant.direction.dir[0] =  1;
+		effect[0].constant.direction.dir[1] =  0;
+		effect[0].periodic.direction.dir[0] = 18000; // Force comes from south
+		effect[0].periodic.period = SDL_HAPTIC_INFINITY; // 1000 ms
+		effect[0].periodic.magnitude = pVibration->wLeftMotorSpeed>>1; // 20000/32767 strength
+		effect[0].periodic.length = SDL_HAPTIC_INFINITY; // 5 seconds long
+
+		effect[1] = effect[0];
+		effect[1].constant.direction.dir[0] = -1;
+		effect[1].periodic.magnitude = pVibration->wRightMotorSpeed>>1;
+		#endif
+
+		if (haptic == 0)
+		{
+			haptic = SDL_HapticOpenFromJoystick(gamepads_sdl[dwUserIndex]);
+
+			effect_id[0] = SDL_HapticNewEffect(haptic, &(effect[0]));
+			effect_id[1] = SDL_HapticNewEffect(haptic, &(effect[1]));
+
+			SDL_HapticRunEffect(haptic, effect_id[0], 1);
+			SDL_HapticRunEffect(haptic, effect_id[1], 1);
+		}
+		else
+		{
+			SDL_HapticUpdateEffect(haptic, effect_id[0], &(effect[0]));
+			SDL_HapticUpdateEffect(haptic, effect_id[1], &(effect[1]));
+		}
+		#endif
 	}
 	return ERROR_SUCCESS;
 }
