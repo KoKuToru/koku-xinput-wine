@@ -165,33 +165,44 @@ void GamepadInitSDL()
 						{
 							break;
 						}
+						if (c == '*')
+						{
+							pos--;
+							break;
+						}
 					}
-
-					if (line[pos++] != '0') break;
-					if (line[pos++] != 'x') break;
 
 					if (pos >= line.size()) break;
 
-					//parse number
+					if (line[pos++] == '&')
 					{
-						stringstream ss(string(line.c_str()+pos, line.size()-pos));
-						int mask;
-						ss >> hex >> mask >> dec;
-						settings[i].mask = short(mask);
-					}
+						if (pos >= line.size()) break;
+						if (line[pos++] != '0') break;
+						if (pos >= line.size()) break;
+						if (line[pos++] != 'x') break;
+						if (pos >= line.size()) break;
 
-					if (debug)
-					{
-						clog << "koku-xinput-wine: Mask = 0x" << right << setw(4) << setfill('0') << hex << settings[i].mask << setfill(' ') << dec << setw(0) << left << endl;
-					}
-
-					//read until '*'
-					while(pos < line.size())
-					{
-						char c = line[pos++];
-						if (c == '*')
+						//parse number
 						{
-							break;
+							stringstream ss(string(line.c_str()+pos, line.size()-pos));
+							int mask;
+							ss >> hex >> mask >> dec;
+							settings[i].mask = short(mask);
+						}
+
+						if (debug)
+						{
+							clog << "koku-xinput-wine: Mask = 0x" << right << setw(4) << setfill('0') << hex << settings[i].mask << setfill(' ') << dec << setw(0) << left << endl;
+						}
+
+						//read until '*'
+						while(pos < line.size())
+						{
+							char c = line[pos++];
+							if (c == '*')
+							{
+								break;
+							}
 						}
 					}
 
@@ -229,8 +240,8 @@ void GamepadInitSDL()
 			oconfig << ";koku-xinput-wine config, for more information see https://github.com/KoKuToru/koku-xinput-wine" << endl;
 			for(int i = 0; i < 20; ++i)
 			{
-				oconfig << left << setw(30) << mapping[i].name << " = " << right << settings[i].type << setfill('0') << setw(2) << int(settings[i].id);
-				if (settings[i].mask != 0xFFFF)
+				oconfig << left << setw(30) << mapping[i].name << " = " << right << settings[i].type << setfill('0') << setw(2) << int(settings[i].id) << setfill(' ') ;
+				if (settings[i].mask != short(0xFFFF))
 				{
 					oconfig << "&0x" << setfill('0') << setw(4) << hex << settings[i].mask << setfill(' ') << dec;
 				}
