@@ -4,6 +4,7 @@
 #ifndef USE_SDL2
 #include <SDL/SDL.h>
 #define SDL_INIT_HAPTIC 0
+#define SDL_Haptic void
 #else
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_haptic.h>
@@ -19,7 +20,13 @@
 using namespace std;
 
 bool active = true;
-static vector<SDL_Joystick*> gamepads_sdl;
+struct Sgamepad_sdl
+{
+	SDL_Joystick *joystick;
+	SDL_Haptic   *haptic;
+	int           haptic_effects[2];
+};
+static vector<Sgamepad_sdl> gamepads_sdl;
 
 GUID GUID_NULL = {0,0,0,{0,0,0,0,0,0,0,0}};
 
@@ -40,7 +47,37 @@ void GamepadInitSDL()
 		SDL_Joystick* joy = SDL_JoystickOpen(i);
 		if (joy)
 		{
-			gamepads_sdl.push_back(joy);
+			Sgamepad_sdl new_gamepad;
+			new_gamepad.joystick = joy;
+			new_gamepad.haptic = 0;
+			//check for haptic
+			#ifdef USE_SDL2
+			new_gamepad.haptic = SDL_HapticOpenFromJoystick(new_gamepad.joystick);
+			if (new_gamepad.haptic != 0)
+			{
+				//start haptic effects
+				SDL_HapticEffect effect[2];
+				memset(&effect, 0, sizeof(SDL_HapticEffect)*2);
+
+				effect[0].type = SDL_HAPTIC_SINE; //constant somehow don't work, or I don't undestand what it does..
+				effect[0].periodic.direction.type = SDL_HAPTIC_CARTESIAN;
+				effect[0].periodic.direction.dir[0] =  1;
+				effect[0].periodic.period = 0;
+				effect[0].periodic.magnitude = 0;
+				effect[0].periodic.length = SDL_HAPTIC_INFINITY;
+
+				effect[1] = effect[0];
+				effect[1].periodic.direction.dir[0] = -1;
+				effect[1].periodic.magnitude = 0;
+
+				new_gamepad.haptic_effects[0] = SDL_HapticNewEffect(new_gamepad.haptic, &(effect[0]));
+				new_gamepad.haptic_effects[1] = SDL_HapticNewEffect(new_gamepad.haptic, &(effect[1]));
+
+				SDL_HapticRunEffect(new_gamepad.haptic, new_gamepad.haptic_effects[0], 1);
+				SDL_HapticRunEffect(new_gamepad.haptic, new_gamepad.haptic_effects[1], 1);
+			}
+			#endif
+			gamepads_sdl.push_back(new_gamepad);
 		}
 	}
 
@@ -287,14 +324,17 @@ void GamepadInitSDL()
 
 void WINAPI XInputEnable(bool enable)
 {
-	active = enable;
-	if (!active)
+	if (!enable)
 	{
 		XINPUT_VIBRATION stop_vibration;
 		stop_vibration.wLeftMotorSpeed = 0;
 		stop_vibration.wRightMotorSpeed = 0;
-		XInputSetState(0, &stop_vibration);
+		for(int i = 0; i < 4; ++i)
+		{
+			XInputSetState(i, &stop_vibration);
+		}
 	}
+	active = enable;
 }
 
 unsigned WINAPI XInputGetAudioDeviceIds(unsigned dwUserIndex, short* pRenderDeviceId, unsigned *pRenderCount, short* pCaptureDeviceId, unsigned *pCaptureCount)
@@ -347,7 +387,7 @@ unsigned WINAPI XInputGetCapabilities(unsigned dwUserIndex, unsigned dwFlags, XI
 
 	pCapabilities->Type    = XINPUT_DEVTYPE_GAMEPAD;
 	pCapabilities->SubType = XINPUT_DEVSUBTYPE_GAMEPAD;
-	pCapabilities->Flags   = XINPUT_CAPS_FFB_SUPPORTED;
+	pCapabilities->Flags   = (gamepads_sdl[dwUserIndex].haptic != 0)?XINPUT_CAPS_FFB_SUPPORTED:0;
 	pCapabilities->Gamepad.wButtons = 0xFFFF;
 	pCapabilities->Gamepad.bLeftTrigger = 255;
 	pCapabilities->Gamepad.bRightTrigger = 255;
@@ -355,9 +395,16 @@ unsigned WINAPI XInputGetCapabilities(unsigned dwUserIndex, unsigned dwFlags, XI
 	pCapabilities->Gamepad.sThumbLY = 32767;
 	pCapabilities->Gamepad.xThumbRX = 32767;
 	pCapabilities->Gamepad.xThumbRY = 32767;
-	pCapabilities->Vibration.wLeftMotorSpeed  = 65535;
-	pCapabilities->Vibration.wRightMotorSpeed = 65535;
-
+	if (gamepads_sdl[dwUserIndex].haptic != 0)
+	{
+		pCapabilities->Vibration.wLeftMotorSpeed  = 65535;
+		pCapabilities->Vibration.wRightMotorSpeed = 65535;
+	}
+	else
+	{
+		pCapabilities->Vibration.wLeftMotorSpeed  = 0;
+		pCapabilities->Vibration.wRightMotorSpeed = 0;
+	}
 	return ERROR_SUCCESS;
 }
 
@@ -407,13 +454,13 @@ unsigned WINAPI XInputGetState(unsigned dwUserIndex, XINPUT_STATE *pState)
 		switch(settings[i].type)
 		{
 			case 'A':
-				value = max(SDL_JoystickGetAxis(gamepads_sdl[dwUserIndex]   , settings[i].id-1)&settings[i].mask, -32767)*settings[i].scale;
+				value = max(SDL_JoystickGetAxis(gamepads_sdl[dwUserIndex].joystick   , settings[i].id-1)&settings[i].mask, -32767)*settings[i].scale;
 				break;
 			case 'H':
-				value = max(SDL_JoystickGetHat(gamepads_sdl[dwUserIndex]    , settings[i].id-1)&settings[i].mask, -32767)*settings[i].scale;
+				value = max(SDL_JoystickGetHat(gamepads_sdl[dwUserIndex].joystick    , settings[i].id-1)&settings[i].mask, -32767)*settings[i].scale;
 				break;
 			case 'B':
-				value = max(SDL_JoystickGetButton(gamepads_sdl[dwUserIndex] , settings[i].id-1)&settings[i].mask, -32767)*settings[i].scale;
+				value = max(SDL_JoystickGetButton(gamepads_sdl[dwUserIndex].joystick , settings[i].id-1)&settings[i].mask, -32767)*settings[i].scale;
 				break;
 			default:
 				//uhm
@@ -458,56 +505,24 @@ unsigned WINAPI XInputSetState(unsigned dwUserIndex, XINPUT_VIBRATION *pVibratio
 	{
 		//Sorry no vibration in SDL1.2, maybe SDL2
 		#ifdef USE_SDL2
-		static SDL_Haptic *haptic = 0;
-		static int effect_id[2];
-
-		SDL_HapticEffect effect[2];
-		memset(&effect, 0, sizeof(SDL_HapticEffect)*2);
-
-		//#define USE_CONSTANT .. not working no idea why
-
-		#ifdef USE_CONSTANT
-		effect[0].type = SDL_HAPTIC_CONSTANT;
-		effect[0].constant.direction.type = SDL_HAPTIC_CARTESIAN;
-		effect[0].constant.direction.dir[0] =  0;
-		effect[0].constant.direction.dir[1] =  1;
-		effect[0].constant.level = pVibration->wLeftMotorSpeed>>1;
-		effect[0].constant.length = SDL_HAPTIC_INFINITY;
-		effect[0].constant.attack_length = 1000; // Takes 1 second to get max strength
-		effect[0].constant.fade_length = 1000; // Takes 1 second to fade away
-
-		effect[1] = effect[0];
-		effect[1].constant.direction.dir[0] = -1;
-		effect[1].periodic.magnitude = pVibration->wRightMotorSpeed>>1;
-		#else
-		effect[0].type = SDL_HAPTIC_SINE;
-		effect[0].constant.direction.type = SDL_HAPTIC_CARTESIAN;
-		effect[0].constant.direction.dir[0] =  1;
-		effect[0].constant.direction.dir[1] =  0;
-		effect[0].periodic.direction.dir[0] = 18000; // Force comes from south
-		effect[0].periodic.period = SDL_HAPTIC_INFINITY; // 1000 ms
-		effect[0].periodic.magnitude = pVibration->wLeftMotorSpeed>>1; // 20000/32767 strength
-		effect[0].periodic.length = SDL_HAPTIC_INFINITY; // 5 seconds long
-
-		effect[1] = effect[0];
-		effect[1].constant.direction.dir[0] = -1;
-		effect[1].periodic.magnitude = pVibration->wRightMotorSpeed>>1;
-		#endif
-
-		if (haptic == 0)
+		if (gamepads_sdl[dwUserIndex].haptic != 0)
 		{
-			haptic = SDL_HapticOpenFromJoystick(gamepads_sdl[dwUserIndex]);
+			SDL_HapticEffect effect[2];
+			memset(&effect, 0, sizeof(SDL_HapticEffect)*2);
 
-			effect_id[0] = SDL_HapticNewEffect(haptic, &(effect[0]));
-			effect_id[1] = SDL_HapticNewEffect(haptic, &(effect[1]));
+			effect[0].type = SDL_HAPTIC_SINE;
+			effect[0].periodic.direction.type = SDL_HAPTIC_CARTESIAN;
+			effect[0].periodic.direction.dir[0] =  1;
+			effect[0].periodic.period = 0;
+			effect[0].periodic.magnitude = pVibration->wLeftMotorSpeed>>1;
+			effect[0].periodic.length = SDL_HAPTIC_INFINITY;
 
-			SDL_HapticRunEffect(haptic, effect_id[0], 1);
-			SDL_HapticRunEffect(haptic, effect_id[1], 1);
-		}
-		else
-		{
-			SDL_HapticUpdateEffect(haptic, effect_id[0], &(effect[0]));
-			SDL_HapticUpdateEffect(haptic, effect_id[1], &(effect[1]));
+			effect[1] = effect[0];
+			effect[1].periodic.direction.dir[0] = -1;
+			effect[1].periodic.magnitude = pVibration->wRightMotorSpeed>>1;
+
+			SDL_HapticUpdateEffect(gamepads_sdl[dwUserIndex].haptic, gamepads_sdl[dwUserIndex].haptic_effects[0], &(effect[0]));
+			SDL_HapticUpdateEffect(gamepads_sdl[dwUserIndex].haptic, gamepads_sdl[dwUserIndex].haptic_effects[1], &(effect[1]));
 		}
 		#endif
 	}
