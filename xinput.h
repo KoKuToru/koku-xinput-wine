@@ -40,8 +40,8 @@ struct XINPUT_GAMEPAD
 	unsigned char  bRightTrigger;
 	short sThumbLX;
 	short sThumbLY;
-	short xThumbRX;
-	short xThumbRY;
+    short sThumbRX;
+    short sThumbRY;
 };
 
 struct XINPUT_STATE
