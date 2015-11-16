@@ -42,7 +42,7 @@ void GamepadInitSDL()
     //init:
     SDL_Init(SDL_INIT_JOYSTICK|SDL_INIT_HAPTIC);
     SDL_JoystickEventState(SDL_IGNORE);
-    SDL_GameControllerAddMapping("030000005e0400008e02000014010000,Microsoft X-Box 360 pad,platform:Linux,x:b2,a:b0,b:b1,y:b3,back:b6,guide:b8,start:b7,dpleft:h0.8,dpdown:h0.0,dpdown:h0.4,dpright:h0.0,dpright:h0.2,dpup:h0.0,dpup:h0.1,leftshoulder:h0.0,leftshoulder:b4,lefttrigger:a2,rightshoulder:b5,righttrigger:a5,leftstick:b9,rightstick:b10,leftx:a0,lefty:a1,rightx:a3,righty:a4,");
+    SDL_GameControllerAddMappingsFromFile("gamecontrollerdb.txt");
     for(int i = 0; i < SDL_NumJoysticks(); ++i)
     {
         SDL_Joystick* joy = SDL_JoystickOpen(i);
@@ -241,9 +241,10 @@ unsigned WINAPI XInputGetState(unsigned dwUserIndex, XINPUT_STATE *pState)
         Uint8 result = SDL_GameControllerGetButton(controller, sdlbuttons[j]);
         //printf("result for %d: %d\n", j, result);
         if (result) {
-
             pState->Gamepad.wButtons |= xbuttons[j];
-            //printf("pressed button\n");
+        }
+        else {
+            pState->Gamepad.wButtons &= ~(xbuttons[j]);
         }
     }
 
