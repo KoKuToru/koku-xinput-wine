@@ -40,7 +40,7 @@ void GamepadInitSDL()
 
     inited = true;
     //init:
-    SDL_Init(SDL_INIT_JOYSTICK|SDL_INIT_HAPTIC);
+    SDL_Init(SDL_INIT_JOYSTICK|SDL_INIT_HAPTIC|SDL_INIT_GAMECONTROLLER);
     SDL_JoystickEventState(SDL_IGNORE);
     SDL_GameControllerAddMappingsFromFile("gamecontrollerdb.txt");
     for(int i = 0; i < SDL_NumJoysticks(); ++i)
@@ -52,7 +52,6 @@ void GamepadInitSDL()
             SDL_GameController* controller = SDL_GameControllerOpen(i);
             if (controller) {
 
-                printf("is Gamepad\n");
                 new_gamepad.joystick = joy;
                 new_gamepad.controller = controller;
                 new_gamepad.haptic = 0;
