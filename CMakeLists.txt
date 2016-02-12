@@ -11,8 +11,7 @@ pkg_search_module(SDL REQUIRED sdl1.2)
 include_directories(${SDL_INCLUDE_DIRS})
 
 # Link SDL
-target_link_libraries(sdl2test ${SDL2_LIBRARIES})
-target_link_libraries(koku-xinput-wine SDL)
+target_link_libraries(koku-xinput-wine ${SDL_LIBRARIES})
 
 # Set CXX flags
 set(CMAKE_CXX_FLAGS "-std=c++0x -m32")
