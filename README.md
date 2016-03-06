@@ -34,6 +34,7 @@ Hacks
 Some applications need additional help to detect your game controller
 
 * [`CoSetProxyBlanket`-Hack](hack/CoSetProxyBlanket/README.md)
+* [`builtinDll`-Hack](hack/builtinDll/README.md)
 
 Config
 ---------------------
