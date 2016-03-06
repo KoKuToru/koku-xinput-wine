@@ -3,6 +3,7 @@
 #include "main.h"
 #include "device.h"
 #include <iostream>
+#include <stdlib.h>
 using namespace std;
 
 #ifdef __LP64__
