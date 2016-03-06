@@ -12,7 +12,7 @@ Because this will generate 32Bit code, no 64Bit support !
 
 It depens on SDL2-Librarys.
      
-     [user@host code]$git clone https://github.com/Hinsbart/koku-xinput-wine.git
+     [user@host code]$git clone https://github.com/KoKuToru/koku-xinput-wine.git
      [user@host code]$cd koku-xinput-wine
      [user&host code]$cmake .
      [user@host code]$make
