@@ -31,13 +31,14 @@ include(FindPkgConfig)
 # SDL_INCLUDE_DIRS - the libSDL include directory
 # SDL_LIBRARIES - The libSDL libraries
 if(PKG_CONFIG_FOUND)
-    pkg_check_modules (SDL REQUIRED sdl2)
+    pkg_check_modules (SDL2 REQUIRED sdl2)
 else()
     find_package(SDL2 REQURIED)
-    list(APPEND SDL_INCLUDE_DIRS ${SDL2_INCLUDE_DIR})
-    list(APPEND SDL_LIBRARIES ${SDL2_LIBRARIES})
 endif()
 
+include_directories(${SDL2_INCLUDE_DIR})
+
 # Link SDL
-target_link_libraries(koku-xinput-wine ${SDL_LIBRARY})
+target_link_libraries(koku-xinput-wine ${SDL2_LIBRARIES})
 set_target_properties(koku-xinput-wine PROPERTIES PREFIX "")
+
