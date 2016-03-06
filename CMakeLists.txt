@@ -19,11 +19,10 @@ if(BUILD_M32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
 endif()
 
+ADD_LIBRARY(koku-xinput-wine SHARED main.cpp xinput.cpp device.cpp)
+
 # Pull in pkgconfig
 include(FindPkgConfig)
-
-project(koku-xinput-wine)
-ADD_LIBRARY(koku-xinput-wine SHARED main.cpp xinput.cpp device.cpp)
 
 # - Try to find SDL
 # Once done this will define
