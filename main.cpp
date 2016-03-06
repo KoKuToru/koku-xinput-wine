@@ -1,7 +1,6 @@
 #include "xinput.h"
 #include <string>
 #include "main.h"
-#include "device.h"
 #include <iostream>
 #include <stdlib.h>
 using namespace std;
@@ -70,10 +69,6 @@ extern "C" void *wine_dll_load( const char *filename, char *error, int errorsize
 				clog << endl;
 			}
 		}
-	}
-	if (string("ole32.dll") ==  filename)
-	{
-		DeviceInit(result);
 	}
 
 	return result;

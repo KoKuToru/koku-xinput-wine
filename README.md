@@ -28,6 +28,13 @@ Usage
 Simple Elegance, without patching wine.
 Of course it would be wiser to put this code into wine..
 
+Hacks
+---------------------
+
+Some applications need additional help to detect your game controller
+
+* [`CoSetProxyBlanket`-Hack](hack/CoSetProxyBlanket/README.md)
+
 Config
 ---------------------
 

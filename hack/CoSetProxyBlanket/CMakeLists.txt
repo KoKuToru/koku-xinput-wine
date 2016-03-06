@@ -1,4 +1,4 @@
-PROJECT(koku-xinput-wine)
+PROJECT(koku-xinput-cosetproxyblanket)
 cmake_minimum_required(VERSION 2.8)
 
 # Check for C++11
@@ -19,27 +19,7 @@ if(BUILD_M32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
 endif()
 
-ADD_LIBRARY(koku-xinput-wine SHARED main.cpp xinput.cpp)
-
-# Pull in pkgconfig
-include(FindPkgConfig)
-
-# - Try to find SDL
-# Once done this will define
-#
-# SDL_FOUND - system has libSDL
-# SDL_INCLUDE_DIRS - the libSDL include directory
-# SDL_LIBRARIES - The libSDL libraries
-if(PKG_CONFIG_FOUND)
-    pkg_check_modules (SDL2 REQUIRED sdl2)
-else()
-    find_package(SDL2 REQURIED)
-endif()
-
-include_directories(${SDL2_INCLUDE_DIR})
+ADD_LIBRARY(${PROJECT_NAME} SHARED main.cpp device.cpp)
 
 # Link SDL
-target_link_libraries(koku-xinput-wine ${SDL2_LIBRARIES})
-set_target_properties(koku-xinput-wine PROPERTIES PREFIX "")
-
-add_subdirectory(hack/CoSetProxyBlanket)
+set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")

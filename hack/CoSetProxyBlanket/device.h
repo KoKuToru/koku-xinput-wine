@@ -14,7 +14,7 @@
  #ifndef KOKU_DEVICE_H
  #define KOKU_DEVICE_H
 
- #include "xinput.h" //for WINAPI macro
+ #define WINAPI  __attribute__((__stdcall__))
 
 struct VARIANT
 {
