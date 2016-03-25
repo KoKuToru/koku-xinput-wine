@@ -248,10 +248,12 @@ DWORD WINAPI XInputGetKeystroke(DWORD dwUserIndex, DWORD dwReserve, PXINPUT_KEYS
 }
 
 DWORD WINAPI XInputGetCapabilities(DWORD dwUserIndex, DWORD dwFlags, XINPUT_CAPABILITIES* pCapabilities) {
+    std::cerr << "koku-xinput-wine:" << "XInputGetCapabilities(" << dwUserIndex << ", " << dwFlags << ", " << (void*) pCapabilities << ") called" << std::endl;
     if (dwUserIndex >= gamepadsSdlCount) {
+        std::cerr << "koku-xinput-wine:" << "return ERROR_DEVICE_NOT_CONNECTED" << std::endl;
         return ERROR_DEVICE_NOT_CONNECTED;
     }
-
+    std::cerr << "koku-xinput-wine:" << "fill Data";
     pCapabilities->Type    = XINPUT_DEVTYPE_GAMEPAD;
     pCapabilities->SubType = XINPUT_DEVSUBTYPE_GAMEPAD;
     pCapabilities->Flags   = (gamepadsSdl[dwUserIndex].haptic != 0)?XINPUT_CAPS_FFB_SUPPORTED:0;
@@ -270,6 +272,7 @@ DWORD WINAPI XInputGetCapabilities(DWORD dwUserIndex, DWORD dwFlags, XINPUT_CAPA
         pCapabilities->Vibration.wLeftMotorSpeed  = 0;
         pCapabilities->Vibration.wRightMotorSpeed = 0;
     }
+    std::cerr << "koku-xinput-wine:" << "return ERROR_SUCCESS" << std::endl;
     return ERROR_SUCCESS;
 }
 
