@@ -129,12 +129,18 @@ unsigned WINAPI XInputGetAudioDeviceIds(unsigned dwUserIndex, short* pRenderDevi
     }
 
     /*
-         If there is no headset connected to the controller,
-         the function will also retrieve ERROR_SUCCESS with NULL as the values
-         for pRenderDeviceId and pCaptureDeviceId.
-         */
-    *pRenderDeviceId = 0;
-    *pCaptureDeviceId = 0;
+     If there is no headset connected to the controller,
+     the function will also retrieve ERROR_SUCCESS with NULL as the values
+     for pRenderDeviceId and pCaptureDeviceId.
+    */
+    if (pRenderCount)
+    {
+        *pRenderDeviceId = 0;
+    }
+    if (pCaptureDeviceId)
+    {
+        *pCaptureDeviceId = 0;
+    }
     return ERROR_SUCCESS;
 }
 
@@ -146,16 +152,19 @@ unsigned WINAPI XInputGetBatteryInformation(unsigned dwUserIndex, char devType, 
         return ERROR_DEVICE_NOT_CONNECTED;
     }
 
-    if (devType == BATTERY_DEVTYPE_GAMEPAD)
+    if (pBatteryInformation)
     {
-        //sorry no real battery check
-        pBatteryInformation->BatteryType  = BATTERY_TYPE_WIRED;
-        pBatteryInformation->BatteryLevel = BATTERY_LEVEL_FULL;
-    }
-    else
-    {
-        pBatteryInformation->BatteryType  = BATTERY_TYPE_DISCONNECTED;
-        pBatteryInformation->BatteryLevel = BATTERY_LEVEL_EMPTY;
+        if (devType == BATTERY_DEVTYPE_GAMEPAD)
+        {
+            //sorry no real battery check
+            pBatteryInformation->BatteryType  = BATTERY_TYPE_WIRED;
+            pBatteryInformation->BatteryLevel = BATTERY_LEVEL_FULL;
+        }
+        else
+        {
+            pBatteryInformation->BatteryType  = BATTERY_TYPE_DISCONNECTED;
+            pBatteryInformation->BatteryLevel = BATTERY_LEVEL_EMPTY;
+        }
     }
     return ERROR_SUCCESS;
 }
@@ -167,26 +176,29 @@ unsigned WINAPI XInputGetCapabilities(unsigned dwUserIndex, unsigned dwFlags, XI
     {
         return ERROR_DEVICE_NOT_CONNECTED;
     }
-
-    pCapabilities->Type    = XINPUT_DEVTYPE_GAMEPAD;
-    pCapabilities->SubType = XINPUT_DEVSUBTYPE_GAMEPAD;
-    pCapabilities->Flags   = (gamepads_sdl[dwUserIndex].haptic != 0)?XINPUT_CAPS_FFB_SUPPORTED:0;
-    pCapabilities->Gamepad.wButtons = 0xFFFF;
-    pCapabilities->Gamepad.bLeftTrigger = 255;
-    pCapabilities->Gamepad.bRightTrigger = 255;
-    pCapabilities->Gamepad.sThumbLX = 32767;
-    pCapabilities->Gamepad.sThumbLY = 32767;
-    pCapabilities->Gamepad.sThumbRX = 32767;
-    pCapabilities->Gamepad.sThumbRY = 32767;
-    if (gamepads_sdl[dwUserIndex].haptic != 0)
+    
+    if (pCapabilities)
     {
-        pCapabilities->Vibration.wLeftMotorSpeed  = 65535;
-        pCapabilities->Vibration.wRightMotorSpeed = 65535;
-    }
-    else
-    {
-        pCapabilities->Vibration.wLeftMotorSpeed  = 0;
-        pCapabilities->Vibration.wRightMotorSpeed = 0;
+        pCapabilities->Type    = XINPUT_DEVTYPE_GAMEPAD;
+        pCapabilities->SubType = XINPUT_DEVSUBTYPE_GAMEPAD;
+        pCapabilities->Flags   = (gamepads_sdl[dwUserIndex].haptic != 0)?XINPUT_CAPS_FFB_SUPPORTED:0;
+        pCapabilities->Gamepad.wButtons = 0xFFFF;
+        pCapabilities->Gamepad.bLeftTrigger = 255;
+        pCapabilities->Gamepad.bRightTrigger = 255;
+        pCapabilities->Gamepad.sThumbLX = 32767;
+        pCapabilities->Gamepad.sThumbLY = 32767;
+        pCapabilities->Gamepad.sThumbRX = 32767;
+        pCapabilities->Gamepad.sThumbRY = 32767;
+        if (gamepads_sdl[dwUserIndex].haptic != 0)
+        {
+            pCapabilities->Vibration.wLeftMotorSpeed  = 65535;
+            pCapabilities->Vibration.wRightMotorSpeed = 65535;
+        }
+        else
+        {
+            pCapabilities->Vibration.wLeftMotorSpeed  = 0;
+            pCapabilities->Vibration.wRightMotorSpeed = 0;
+        }
     }
     return ERROR_SUCCESS;
 }
@@ -200,12 +212,16 @@ unsigned WINAPI XInputGetDSoundAudioDeviceGuids(unsigned dwUserIndex, GUID* pDSo
     }
 
     /*
-         If there is no headset connected to the controller,
-         the function also retrieves ERROR_SUCCESS with GUID_NULL as the values
-         for pDSoundRenderGuid and pDSoundCaptureGuid.
-         */
-    *pDSoundRenderGuid  = GUID_NULL;
-    *pDSoundCaptureGuid = GUID_NULL;
+     If there is no headset connected to the controller,
+     the function also retrieves ERROR_SUCCESS with GUID_NULL as the values
+     for pDSoundRenderGuid and pDSoundCaptureGuid.
+    */
+    if (pDSoundRenderGuid) {
+        *pDSoundRenderGuid  = GUID_NULL;
+    }
+    if (pDSoundCaptureGuid) {
+        *pDSoundCaptureGuid = GUID_NULL;
+    }
     return ERROR_SUCCESS;
 }
 
@@ -233,33 +249,35 @@ unsigned WINAPI XInputGetState(unsigned dwUserIndex, XINPUT_STATE *pState)
     SDL_GameControllerUpdate();
 
     //set data
-    SDL_GameController* controller = gamepads_sdl[dwUserIndex].controller;
+    if (pState) 
+    {
+        SDL_GameController* controller = gamepads_sdl[dwUserIndex].controller;
 
-    for (int j = 0; j < MAX_XINPUT_BUTTONS; j++) {
+        for (int j = 0; j < MAX_XINPUT_BUTTONS; j++) {
 
-        Uint8 result = SDL_GameControllerGetButton(controller, sdlbuttons[j]);
-        //printf("result for %d: %d\n", j, result);
-        if (result) {
-            pState->Gamepad.wButtons |= xbuttons[j];
+            Uint8 result = SDL_GameControllerGetButton(controller, sdlbuttons[j]);
+            //printf("result for %d: %d\n", j, result);
+            if (result) {
+                pState->Gamepad.wButtons |= xbuttons[j];
+            }
+            else {
+                pState->Gamepad.wButtons &= ~(xbuttons[j]);
+            }
         }
-        else {
-            pState->Gamepad.wButtons &= ~(xbuttons[j]);
-        }
+
+        short ly = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY);
+        short ry = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_RIGHTY);
+
+        pState->Gamepad.sThumbLX = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX);
+        pState->Gamepad.sThumbLY = (ly == 0 ? 0 : -ly -1);
+        pState->Gamepad.sThumbRX = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_RIGHTX);
+        pState->Gamepad.sThumbRY = ry == 0 ? 0 : -ry -1;
+        pState->Gamepad.bLeftTrigger = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
+        pState->Gamepad.bRightTrigger = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
+
+        static int dwPacketNumber = 0;
+        pState->dwPacketNumber = ++dwPacketNumber;
     }
-
-    short ly = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY);
-    short ry = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_RIGHTY);
-
-    pState->Gamepad.sThumbLX = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX);
-    pState->Gamepad.sThumbLY = (ly == 0 ? 0 : -ly -1);
-    pState->Gamepad.sThumbRX = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_RIGHTX);
-    pState->Gamepad.sThumbRY = ry == 0 ? 0 : -ry -1;
-    pState->Gamepad.bLeftTrigger = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
-    pState->Gamepad.bRightTrigger = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
-
-    static int dwPacketNumber = 0;
-    pState->dwPacketNumber = ++dwPacketNumber;
-
     return ERROR_SUCCESS;
 }
 
@@ -271,7 +289,7 @@ unsigned WINAPI XInputSetState(unsigned dwUserIndex, XINPUT_VIBRATION *pVibratio
         return ERROR_DEVICE_NOT_CONNECTED;
     }
 
-    if (active)
+    if (active && pVibration)
     {
         if (gamepads_sdl[dwUserIndex].haptic != 0)
         {
