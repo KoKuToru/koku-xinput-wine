@@ -254,23 +254,25 @@ DWORD WINAPI XInputGetCapabilities(DWORD dwUserIndex, DWORD dwFlags, XINPUT_CAPA
         return ERROR_DEVICE_NOT_CONNECTED;
     }
     std::cerr << "koku-xinput-wine:" << "fill Data";
-    pCapabilities->Type    = XINPUT_DEVTYPE_GAMEPAD;
-    pCapabilities->SubType = XINPUT_DEVSUBTYPE_GAMEPAD;
-    pCapabilities->Flags   = (gamepadsSdl[dwUserIndex].haptic != 0)?XINPUT_CAPS_FFB_SUPPORTED:0;
-    pCapabilities->Gamepad.wButtons = 0xFFFF;
-    pCapabilities->Gamepad.bLeftTrigger = 255;
-    pCapabilities->Gamepad.bRightTrigger = 255;
-    pCapabilities->Gamepad.sThumbLX = 32767;
-    pCapabilities->Gamepad.sThumbLY = 32767;
-    pCapabilities->Gamepad.sThumbRX = 32767;
-    pCapabilities->Gamepad.sThumbRY = 32767;
-    if (gamepadsSdl[dwUserIndex].haptic != 0) {
-        pCapabilities->Vibration.wLeftMotorSpeed  = 65535;
-        pCapabilities->Vibration.wRightMotorSpeed = 65535;
-    }
-    else {
-        pCapabilities->Vibration.wLeftMotorSpeed  = 0;
-        pCapabilities->Vibration.wRightMotorSpeed = 0;
+    if (pCapabilities) {
+        pCapabilities->Type    = XINPUT_DEVTYPE_GAMEPAD;
+        pCapabilities->SubType = XINPUT_DEVSUBTYPE_GAMEPAD;
+        pCapabilities->Flags   = (gamepadsSdl[dwUserIndex].haptic != 0)?XINPUT_CAPS_FFB_SUPPORTED:0;
+        pCapabilities->Gamepad.wButtons = 0xFFFF;
+        pCapabilities->Gamepad.bLeftTrigger = 255;
+        pCapabilities->Gamepad.bRightTrigger = 255;
+        pCapabilities->Gamepad.sThumbLX = 32767;
+        pCapabilities->Gamepad.sThumbLY = 32767;
+        pCapabilities->Gamepad.sThumbRX = 32767;
+        pCapabilities->Gamepad.sThumbRY = 32767;
+        if (gamepadsSdl[dwUserIndex].haptic != 0) {
+            pCapabilities->Vibration.wLeftMotorSpeed  = 65535;
+            pCapabilities->Vibration.wRightMotorSpeed = 65535;
+        }
+        else {
+            pCapabilities->Vibration.wLeftMotorSpeed  = 0;
+            pCapabilities->Vibration.wRightMotorSpeed = 0;
+        }
     }
     std::cerr << "koku-xinput-wine:" << "return ERROR_SUCCESS" << std::endl;
     return ERROR_SUCCESS;
