@@ -1,0 +1,6 @@
+MODULE    = xinput1_4.dll
+
+C_SRCS = \
+	xinput1_4_main.c
+
+RC_SRCS = version.rc

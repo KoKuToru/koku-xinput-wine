@@ -1,9 +1,9 @@
 #include "device.h"
-#include "main.h"
 #include <cstring>
 #include <new>
 #include <string>
 #include <iostream>
+#include "main.h"
 using namespace std;
 
 std::string check_bstrNamespace = "\\\\.\\root\\cimv2";
@@ -26,7 +26,7 @@ void DeviceInit(void* handle)
 {
 	if (debug)
 	{
-		clog << "koku-xinput-wine: search for `CoSetProxyBlanket`";
+		clog << "koku-xinput-cosetproxyblanket: search for `CoSetProxyBlanket`";
 	}
 	//hook functions
 	long addr = long(dlsym(handle, "CoSetProxyBlanket"));
@@ -57,7 +57,7 @@ void* WINAPI CoSetProxyBlanket(void* pProxy, unsigned dwAuthnSvc, unsigned dwAut
 {
 	if (debug)
 	{
-		clog << "koku-xinput-wine: CoSetProxyBlanket(...);" << endl;
+		clog << "koku-xinput-cosetproxyblanket: CoSetProxyBlanket(...);" << endl;
 	}
 
 	//disable hook
@@ -96,7 +96,7 @@ void* WINAPI CreateInstanceEnum(void* pIWbemServices, short* bstrClassName, unsi
 
 	if (debug)
 	{
-		clog << "koku-xinput-wine: CreateInstanceEnum(..., \"" << bstrClassName_s << "\", ...);" << endl;
+		clog << "koku-xinput-cosetproxyblanket: CreateInstanceEnum(..., \"" << bstrClassName_s << "\", ...);" << endl;
 	}
 
 	//call original
@@ -131,7 +131,7 @@ void* WINAPI EnumDevices_Next(void* pEnumDevices, unsigned a, unsigned b, void**
 {
 	if (debug)
 	{
-		clog << "koku-xinput-wine: EnumDevices_Next(...);" << endl;
+		clog << "koku-xinput-cosetproxyblanket: EnumDevices_Next(...);" << endl;
 	}
 
 	//call original
@@ -141,7 +141,7 @@ void* WINAPI EnumDevices_Next(void* pEnumDevices, unsigned a, unsigned b, void**
 	{
 		if (debug)
 		{
-			clog << "koku-xinput-wine: Return own custom-data;" << endl;
+			clog << "koku-xinput-cosetproxyblanket: Return own custom-data;" << endl;
 		}
 		//restore original
 		*((void**)(Next_addr)) = (void*)Next_original;
@@ -178,7 +178,7 @@ bool WINAPI Devices_Get(void* pDevices, short* wszName, unsigned lFlags, VARIANT
 
 	if (debug)
 	{
-		clog << "koku-xinput-wine: Devices_Get(..., \""<< wszName_s << "\");" << endl;
+		clog << "koku-xinput-cosetproxyblanket: Devices_Get(..., \""<< wszName_s << "\");" << endl;
 	}
 
 	if (check_bstrDeviceID != wszName_s)
@@ -189,7 +189,7 @@ bool WINAPI Devices_Get(void* pDevices, short* wszName, unsigned lFlags, VARIANT
 
 	if (debug)
 	{
-		clog << "koku-xinput-wine: return wine-gamepad" << endl;
+		clog << "koku-xinput-cosetproxyblanket: return wine-gamepad" << endl;
 	}
 
 	pVal->vt = /*VT_BSTR*/8;
@@ -202,7 +202,7 @@ void WINAPI Devices_Release(void* pDevices)
 {
 	if (debug)
 	{
-		clog << "koku-xinput-wine: Devices_Release(...);" << endl;
+		clog << "koku-xinput-cosetproxyblanket: Devices_Release(...);" << endl;
 	}
 	delete[] (char*)pDevices;
 }
