@@ -248,12 +248,12 @@ DWORD WINAPI XInputGetKeystroke(DWORD dwUserIndex, DWORD dwReserve, PXINPUT_KEYS
 }
 
 DWORD WINAPI XInputGetCapabilities(DWORD dwUserIndex, DWORD dwFlags, XINPUT_CAPABILITIES* pCapabilities) {
-    std::cerr << "koku-xinput-wine:" << "XInputGetCapabilities(" << dwUserIndex << ", " << dwFlags << ", " << (void*) pCapabilities << ") called" << std::endl;
+    printf("koku-xinput-wine: XInputGetCapabilities(%d, %d, %p)\n", dwUserIndex, dwFlags, pCapabilities);
     if (dwUserIndex >= gamepadsSdlCount) {
-        std::cerr << "koku-xinput-wine:" << "return ERROR_DEVICE_NOT_CONNECTED" << std::endl;
+        printf("koku-xinput-wine: return ERROR_DEVICE_NOT_CONNECTED\n");        
         return ERROR_DEVICE_NOT_CONNECTED;
     }
-    std::cerr << "koku-xinput-wine:" << "fill Data";
+    printf("koku-xinput-wine: fill data\n");
     if (pCapabilities) {
         pCapabilities->Type    = XINPUT_DEVTYPE_GAMEPAD;
         pCapabilities->SubType = XINPUT_DEVSUBTYPE_GAMEPAD;
@@ -274,7 +274,7 @@ DWORD WINAPI XInputGetCapabilities(DWORD dwUserIndex, DWORD dwFlags, XINPUT_CAPA
             pCapabilities->Vibration.wRightMotorSpeed = 0;
         }
     }
-    std::cerr << "koku-xinput-wine:" << "return ERROR_SUCCESS" << std::endl;
+    printf("koku-xinput-wine: return ERROR_SUCCESS\n");
     return ERROR_SUCCESS;
 }
 
