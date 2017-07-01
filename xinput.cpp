@@ -13,6 +13,8 @@
 #include <iomanip>
 #include <sstream>
 
+#include <winerror.h>
+
 #define WINE_XINPUT_AXES     8
 #define MAX_XINPUT_BUTTONS 14
 using namespace std;
@@ -28,7 +30,6 @@ struct Sgamepad_sdl
 static vector<Sgamepad_sdl> gamepads_sdl;
 static const unsigned int xbuttons[MAX_XINPUT_BUTTONS] = {XINPUT_GAMEPAD_START, XINPUT_GAMEPAD_BACK, XINPUT_GAMEPAD_LEFT_THUMB, XINPUT_GAMEPAD_RIGHT_THUMB, XINPUT_GAMEPAD_LEFT_SHOULDER, XINPUT_GAMEPAD_RIGHT_SHOULDER, XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_B, XINPUT_GAMEPAD_X, XINPUT_GAMEPAD_Y, XINPUT_GAMEPAD_DPAD_DOWN, XINPUT_GAMEPAD_DPAD_LEFT, XINPUT_GAMEPAD_DPAD_RIGHT, XINPUT_GAMEPAD_DPAD_UP};
 static const SDL_GameControllerButton sdlbuttons[MAX_XINPUT_BUTTONS] = {SDL_CONTROLLER_BUTTON_START, SDL_CONTROLLER_BUTTON_BACK, SDL_CONTROLLER_BUTTON_LEFTSTICK, SDL_CONTROLLER_BUTTON_RIGHTSTICK, SDL_CONTROLLER_BUTTON_LEFTSHOULDER, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, SDL_CONTROLLER_BUTTON_A, SDL_CONTROLLER_BUTTON_B, SDL_CONTROLLER_BUTTON_X, SDL_CONTROLLER_BUTTON_Y, SDL_CONTROLLER_BUTTON_DPAD_DOWN, SDL_CONTROLLER_BUTTON_DPAD_LEFT, SDL_CONTROLLER_BUTTON_DPAD_RIGHT, SDL_CONTROLLER_BUTTON_DPAD_UP};
-GUID GUID_NULL = {0,0,0,{0,0,0,0,0,0,0,0}};
 
 void GamepadInitSDL()
 {
@@ -176,7 +177,7 @@ unsigned WINAPI XInputGetCapabilities(unsigned dwUserIndex, unsigned dwFlags, XI
     {
         return ERROR_DEVICE_NOT_CONNECTED;
     }
-    
+
     if (pCapabilities)
     {
         pCapabilities->Type    = XINPUT_DEVTYPE_GAMEPAD;
@@ -249,7 +250,7 @@ unsigned WINAPI XInputGetState(unsigned dwUserIndex, XINPUT_STATE *pState)
     SDL_GameControllerUpdate();
 
     //set data
-    if (pState) 
+    if (pState)
     {
         SDL_GameController* controller = gamepads_sdl[dwUserIndex].controller;
 
