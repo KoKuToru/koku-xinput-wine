@@ -1,44 +1,17 @@
-PROJECT(koku-xinput-wine)
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.6)
+project(koku-xinput-wine)
 
-# Check for C++11
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-else()
-    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
-endif()
-
-# Check for 32bit version
 option(BUILD_M32 "Build library in 32Bit mode" ON)
 if(BUILD_M32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
+  add_compile_options(-m32)
 endif()
 
-ADD_LIBRARY(koku-xinput-wine SHARED main.cpp xinput.cpp device.cpp)
+add_library(koku-xinput-wine SHARED main.h main.cpp xinput.h xinput.cpp
+  device.h device.cpp)
+set_target_properties(koku-xinput-wine PROPERTIES CXX_STANDARD 11 PREFIX "")
 
-# Pull in pkgconfig
-include(FindPkgConfig)
-
-# - Try to find SDL
-# Once done this will define
-#
-# SDL_FOUND - system has libSDL
-# SDL_INCLUDE_DIRS - the libSDL include directory
-# SDL_LIBRARIES - The libSDL libraries
-if(PKG_CONFIG_FOUND)
-    pkg_check_modules (SDL2 REQUIRED sdl2)
-else()
-    find_package(SDL2 REQURIED)
-endif()
-
-include_directories(${SDL2_INCLUDE_DIR})
-
-# Link SDL
-target_link_libraries(koku-xinput-wine ${SDL2_LIBRARIES})
-set_target_properties(koku-xinput-wine PROPERTIES PREFIX "")
-
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(SDL2 REQUIRED sdl2)
+target_include_directories(koku-xinput-wine PRIVATE ${SDL2_INCLUDE_DIR})
+target_link_libraries(koku-xinput-wine PRIVATE ${SDL2_LIBRARIES})
