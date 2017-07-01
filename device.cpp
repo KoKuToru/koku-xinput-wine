@@ -1,208 +1,148 @@
-#include "device.h"
 #include "main.h"
-#include <cstring>
-#include <new>
-#include <string>
-#include <iostream>
-using namespace std;
 
-std::string check_bstrNamespace = "\\\\.\\root\\cimv2";
-std::string check_bstrClassName = "Win32_PNPEntity";
-std::string check_bstrDeviceID  = "DeviceID";
+#define _FORCENAMELESSUNION
+#define CINTERFACE
+#define INITGUID
 
-const short wine_gamepad[] = {'V','I','D','_','3','E','D','9','&',
-							  'P','I','D','_','9','E','5','7','&',
-							  'I','G','_','0','0'}; //you can get VID/PID from wine-source
+#include "objbase.h"
+#include "wbemcli.h"
 
-//what this does ? well.. hard to explain, please don't mind as long as it works
-long CoSetProxyBlanket_addr = 0;
-char  CoSetProxyBlanket_hook[sizeof(Sjmp)];
-long CreateInstanceEnum_addr = 0;
-long CreateInstanceEnum_original;
-long Next_addr = 0;
-long Next_original;
+namespace koku {
+unsigned short wine_gamepad[] = {'V', 'I', 'D', '_', '3', 'E', 'D', '9',
+                                 '&', 'P', 'I', 'D', '_', '9', 'E', '5',
+                                 '7', '&', 'I', 'G', '_', '0', '0'};
+unsigned short x360_gamepad[] = {'V', 'I', 'D', '_', '0', '4', '5', 'E',
+                                 '&', 'P', 'I', 'D', '_', '0', '2', '8',
+                                 'E', '&', 'I', 'G', '_', '0', '0'};
 
-void DeviceInit(void* handle)
-{
-	if (debug)
-	{
-		clog << "koku-xinput-wine: search for `CoSetProxyBlanket`";
-	}
-	//hook functions
-	long addr = long(dlsym(handle, "CoSetProxyBlanket"));
+HRESULT STDMETHODCALLTYPE IWbemClassObject_Get(IWbemClassObject *This,
+                                               LPCWSTR wszName, LONG lFlags,
+                                               VARIANT *pVal, CIMTYPE *pType,
+                                               LONG *plFlavor) {
+  debug("");
 
-	if (addr != 0)
-	{
-		if (debug)
-		{
-			clog << ", found, redirect it";
-		}
-		//backup data
-		CoSetProxyBlanket_addr = addr;
-		memcpy(CoSetProxyBlanket_hook, (void*)CoSetProxyBlanket_addr, sizeof(Sjmp));
+  auto wszNameLen = ((uint32_t *)wszName)[-1];
+  if (std::memcmp(wszName, u"DeviceID", wszNameLen) == 0) {
+    debug("DeviceID");
 
-		long addr_start = (addr - PAGESIZE-1) & ~(PAGESIZE-1);
-		long addr_end   = (addr + PAGESIZE-1) & ~(PAGESIZE-1);
-		mprotect((void*)addr_start, addr_end-addr_start , PROT_READ|PROT_WRITE|PROT_EXEC);
+    pVal->vt = VT_BSTR;
+    pVal->bstrVal = x360_gamepad;
 
-		new ((void*)addr) Sjmp((void*)CoSetProxyBlanket);
-	}
-	if (debug)
-	{
-		clog << endl;
-	}
+    return 0;
+  }
+
+  return 1;
 }
 
-void* WINAPI CoSetProxyBlanket(void* pProxy, unsigned dwAuthnSvc, unsigned dwAuthzSvc, void* pServerPrincName, unsigned dwAuthnLevel, unsigned dwImpLevel, void* pAuthInfo, unsigned dwCapabilities)
-{
-	if (debug)
-	{
-		clog << "koku-xinput-wine: CoSetProxyBlanket(...);" << endl;
-	}
-
-	//disable hook
-	memcpy((void*)CoSetProxyBlanket_addr, CoSetProxyBlanket_hook, sizeof(Sjmp));
-	//call original
-	void* result = ((decltype(&CoSetProxyBlanket))CoSetProxyBlanket_addr)(pProxy, dwAuthnSvc, dwAuthzSvc, pServerPrincName, dwAuthnLevel, dwImpLevel, pAuthInfo, dwCapabilities);
-	//enable hook
-	new ((void*)CoSetProxyBlanket_addr) Sjmp((void*)CoSetProxyBlanket);
-	//overwrite the function-table that CreateInstanceEnum goes to our function
-	long pProxy_func = *((long*)pProxy);
-	long pProxy_func_createinstanceenum = pProxy_func+0x48;
-
-	long addr_start = (pProxy_func_createinstanceenum - PAGESIZE-1) & ~(PAGESIZE-1);
-	long addr_end   = (pProxy_func_createinstanceenum + PAGESIZE-1) & ~(PAGESIZE-1);
-	mprotect((void*)addr_start, addr_end-addr_start , PROT_READ|PROT_WRITE|PROT_EXEC);
-
-	if (*((void**)(pProxy_func_createinstanceenum)) != (void*)CreateInstanceEnum)
-	{
-		CreateInstanceEnum_original = *((long*)(pProxy_func_createinstanceenum));
-		CreateInstanceEnum_addr = pProxy_func_createinstanceenum;
-	}
-
-	*((void**)(pProxy_func_createinstanceenum)) = (void*)CreateInstanceEnum;
-
-	return result;
+ULONG STDMETHODCALLTYPE IWbemClassObject_Release(IWbemClassObject *This) {
+  debug("");
+  delete This->lpVtbl;
+  delete This;
+  return 0;
 }
 
-void* WINAPI CreateInstanceEnum(void* pIWbemServices, short* bstrClassName, unsigned null1, void* null2, void* pEnumDevices)
-{
-	//check, uhm i have no idea how to work with unicode..
-	string bstrClassName_s;
-	for(int i = 0; bstrClassName[i] != 0; ++i)
-	{
-		bstrClassName_s += bstrClassName[i];
-	}
+koku::jumper<std::decay<decltype(*IEnumWbemClassObjectVtbl::Next)>::type>
+    IEnumWbemClassObject_Next_Jumper;
+HRESULT STDMETHODCALLTYPE IEnumWbemClassObject_Next_Koku(
+    IEnumWbemClassObject *This, LONG lTimeout, ULONG uCount,
+    IWbemClassObject **apObjects, ULONG *puReturned) {
+  debug("");
+  auto result = IEnumWbemClassObject_Next_Jumper(This, lTimeout, uCount,
+                                                 apObjects, puReturned);
 
-	if (debug)
-	{
-		clog << "koku-xinput-wine: CreateInstanceEnum(..., \"" << bstrClassName_s << "\", ...);" << endl;
-	}
+  if (*puReturned == 0) {
+    auto wbemClassObject = new IWbemClassObject{};
+    wbemClassObject->lpVtbl = new IWbemClassObjectVtbl{};
 
-	//call original
-	void* result = ((decltype(&CreateInstanceEnum))CreateInstanceEnum_original)(pIWbemServices, bstrClassName, null1, null2, pEnumDevices);
+    wbemClassObject->lpVtbl->Get = &IWbemClassObject_Get;
+    wbemClassObject->lpVtbl->Release = &IWbemClassObject_Release;
 
-	if (bstrClassName_s != check_bstrClassName)
-	{
+    *puReturned = 1;
+    *apObjects = wbemClassObject;
+  }
 
-		return result;
-	}
-
-	//overwrite the function-table that Next goes to our function
-	long pEnumDevices_func = **((long**)pEnumDevices);
-	long pEnumDevices_func_next = pEnumDevices_func+0x10;
-
-	long addr_start = (pEnumDevices_func_next - PAGESIZE-1) & ~(PAGESIZE-1);
-	long addr_end   = (pEnumDevices_func_next + PAGESIZE-1) & ~(PAGESIZE-1);
-	mprotect((void*)addr_start, addr_end-addr_start , PROT_READ|PROT_WRITE|PROT_EXEC);
-
-	if (*((void**)(pEnumDevices_func_next)) != (void*)EnumDevices_Next)
-	{
-		Next_addr     = pEnumDevices_func_next;
-		Next_original = *((long*)(pEnumDevices_func_next));
-	}
-
-	*((void**)(pEnumDevices_func_next)) = (void*)EnumDevices_Next;
-
-	return result;
+  return result;
 }
 
-void* WINAPI EnumDevices_Next(void* pEnumDevices, unsigned a, unsigned b, void** pDevices, unsigned* uReturned)
-{
-	if (debug)
-	{
-		clog << "koku-xinput-wine: EnumDevices_Next(...);" << endl;
-	}
+koku::jumper<std::decay<decltype(*IWbemServicesVtbl::CreateInstanceEnum)>::type>
+    IWbemServices_CreateInstanceEnum_Jumper;
+HRESULT STDMETHODCALLTYPE IWbemServices_CreateInstanceEnum_Koku(
+    IWbemServices *This, const BSTR strFilter, LONG lFlags, IWbemContext *pCtx,
+    IEnumWbemClassObject **ppEnum) {
+  debug("");
+  auto result = IWbemServices_CreateInstanceEnum_Jumper(This, strFilter, lFlags,
+                                                        pCtx, ppEnum);
 
-	//call original
-	void* result = ((decltype(&EnumDevices_Next))Next_original)(pEnumDevices, a, b, pDevices, uReturned);
+  auto strFilterLen = ((uint32_t *)strFilter)[-1];
+  if (std::memcmp(strFilter, u"Win32_PNPEntity", strFilterLen) == 0) {
+    auto enumWbemClassObject = *ppEnum;
+    if (enumWbemClassObject != nullptr &&
+        IEnumWbemClassObject_Next_Jumper.src !=
+            enumWbemClassObject->lpVtbl->Next) {
+      IEnumWbemClassObject_Next_Jumper = koku::make_jumper(
+          enumWbemClassObject->lpVtbl->Next, &IEnumWbemClassObject_Next_Koku);
+      debug("found IEnumWbemClassObject_Next at %p, redirecting it to %p",
+            enumWbemClassObject->lpVtbl->Next, &IEnumWbemClassObject_Next_Koku);
+    }
+  }
 
-	if (*uReturned == 0)
-	{
-		if (debug)
-		{
-			clog << "koku-xinput-wine: Return own custom-data;" << endl;
-		}
-		//restore original
-		*((void**)(Next_addr)) = (void*)Next_original;
-
-		//end reach add our own stuff ;)
-		*uReturned = 1;
-
-		//Very ugly stuff will happen now:
-		*pDevices = (void*)(new char[1024]);
-		*((void**)*pDevices) = (void*)(unsigned(*pDevices)+1);
-
-		long pDevices_func = **((long**)pDevices);
-		long pDevices_func_get = pDevices_func+0x10;
-
-		long addr_start = (pDevices_func_get - PAGESIZE-1) & ~(PAGESIZE-1);
-		long addr_end   = (pDevices_func_get + PAGESIZE-1) & ~(PAGESIZE-1);
-		mprotect((void*)addr_start, addr_end-addr_start , PROT_READ|PROT_WRITE|PROT_EXEC);
-
-		*((void**)(pDevices_func_get)) = (void*)Devices_Get;
-		pDevices_func_get = pDevices_func+0x08;
-		*((void**)(pDevices_func_get)) = (void*)Devices_Release;
-	}
-	return result;
+  return result;
 }
 
-bool WINAPI Devices_Get(void* pDevices, short* wszName, unsigned lFlags, VARIANT* pVal, void* o1, void* o2)
-{
-	//check, uhm i have no idea how to work with unicode..
-	string wszName_s;
-	for(int i = 0; wszName[i] != 0; ++i)
-	{
-		wszName_s += wszName[i];
-	}
+koku::jumper<std::decay<decltype(*IWbemLocatorVtbl::ConnectServer)>::type>
+    IWbemLocator_ConnectServer_Jumper;
+HRESULT STDMETHODCALLTYPE IWbemLocator_ConnectServer_Koku(
+    IWbemLocator *This, const BSTR strNetworkResource, const BSTR strUser,
+    const BSTR strPassword, const BSTR strLocale, LONG lSecurityFlags,
+    const BSTR strAuthority, IWbemContext *pCtx, IWbemServices **ppNamespace) {
+  debug("");
+  auto result = IWbemLocator_ConnectServer_Jumper(
+      This, strNetworkResource, strUser, strPassword, strLocale, lSecurityFlags,
+      strAuthority, pCtx, ppNamespace);
 
-	if (debug)
-	{
-		clog << "koku-xinput-wine: Devices_Get(..., \""<< wszName_s << "\");" << endl;
-	}
+  auto wbemServices = *ppNamespace;
+  if (wbemServices != nullptr && IWbemServices_CreateInstanceEnum_Jumper.src !=
+                                     wbemServices->lpVtbl->CreateInstanceEnum) {
+    IWbemServices_CreateInstanceEnum_Jumper =
+        koku::make_jumper(wbemServices->lpVtbl->CreateInstanceEnum,
+                          &IWbemServices_CreateInstanceEnum_Koku);
+    debug("found IWbemServices_CreateInstanceEnum at %p, redirecting it to %p",
+          wbemServices->lpVtbl->CreateInstanceEnum,
+          &IWbemServices_CreateInstanceEnum_Koku);
+  }
 
-	if (check_bstrDeviceID != wszName_s)
-	{
-		//uhm nothing
-		return 1; //not ERROR_SUCCESS
-	}
-
-	if (debug)
-	{
-		clog << "koku-xinput-wine: return wine-gamepad" << endl;
-	}
-
-	pVal->vt = /*VT_BSTR*/8;
-	pVal->STR = wine_gamepad;
-
-	return 0;
+  return result;
 }
 
-void WINAPI Devices_Release(void* pDevices)
-{
-	if (debug)
-	{
-		clog << "koku-xinput-wine: Devices_Release(...);" << endl;
-	}
-	delete[] (char*)pDevices;
+koku::jumper<decltype(CoCreateInstance)> CoCreateInstance_Jumper;
+HRESULT WINAPI CoCreateInstance(REFCLSID rclsid, LPUNKNOWN pUnkOuter,
+                                DWORD dwClsContext, REFIID iid, LPVOID *ppv) {
+  debug("");
+  auto result =
+      CoCreateInstance_Jumper(rclsid, pUnkOuter, dwClsContext, iid, ppv);
+
+  if (std::memcmp(&iid, &IID_IWbemLocator, sizeof(iid)) == 0) {
+    auto wbemLocator = *(IWbemLocator **)ppv;
+    if (wbemLocator != nullptr && IWbemLocator_ConnectServer_Jumper.src !=
+                                      wbemLocator->lpVtbl->ConnectServer) {
+      IWbemLocator_ConnectServer_Jumper = koku::make_jumper(
+          wbemLocator->lpVtbl->ConnectServer, &IWbemLocator_ConnectServer_Koku);
+      debug("found IWbemLocator_ConnectServer at %p, redirecting it to %p",
+            wbemLocator->lpVtbl->ConnectServer,
+            &IWbemLocator_ConnectServer_Koku);
+    }
+  }
+
+  return result;
 }
+
+void DeviceInit(void *handle) {
+  if (auto address =
+          (decltype(&CoCreateInstance))dlsym(handle, "CoCreateInstance")) {
+    CoCreateInstance_Jumper =
+        koku::make_jumper(address, &koku::CoCreateInstance);
+    debug("found CoCreateInstance at %p, redirecting it to %p", address,
+          &koku::CoCreateInstance);
+  }
+}
+} // namespace koku

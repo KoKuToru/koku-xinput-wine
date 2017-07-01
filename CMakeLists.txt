@@ -31,12 +31,14 @@ if (NOT CMAKE_C_COMPILER MATCHES "i686-w64-mingw32-gcc"
     add_compile_options(-m32)
   endif()
 
-  add_library(koku-xinput-wine SHARED main.h main.cpp xinput.h xinput.cpp
-    device.h device.cpp)
+  add_library(koku-xinput-wine SHARED main.h main.cpp xinput.cpp
+    device.cpp jumper.h)
   set_target_properties(koku-xinput-wine PROPERTIES CXX_STANDARD 11 PREFIX "")
   target_include_directories(koku-xinput-wine PRIVATE
      /usr/include/wine-development/windows
      /usr/include/wine/windows)
+  target_compile_options(koku-xinput-wine PRIVATE -Wno-ignored-attributes
+    -Wno-subobject-linkage)
 
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(SDL2 REQUIRED sdl2)
