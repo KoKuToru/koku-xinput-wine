@@ -1,6 +1,20 @@
 #ifndef KOKU_XINPUT_H
 #define KOKU_XINPUT_H
-#define WINAPI  __attribute__((__stdcall__))
+//__stdcall declaration from wine/includes/windef.h
+#ifdef __LP64__
+#  if (__GNUC__ > 5) || ((__GNUC__ == 5) && (__GNUC_MINOR__ >= 3))
+#    define __stdcall __attribute__((ms_abi)) __attribute__((__force_align_arg_pointer__))
+#  else
+#    define __stdcall __attribute__((ms_abi))
+#  endif
+#else
+#  if (__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ >= 2)) || defined(__APPLE__)
+#    define __stdcall __attribute__((__stdcall__)) __attribute__((__force_align_arg_pointer__))
+#  else
+#    define __stdcall __attribute__((__stdcall__))
+#  endif
+#endif
+#define WINAPI  __stdcall
 #define ERROR_SUCCESS 			 0x0
 #define ERROR_DEVICE_NOT_CONNECTED 	 0x48f
 #define ERROR_EMPTY					0x10D2
