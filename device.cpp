@@ -41,7 +41,6 @@ void DeviceInit(void* handle)
 		CoSetProxyBlanket_addr = addr;
 		memcpy(CoSetProxyBlanket_hook, (void*)CoSetProxyBlanket_addr, sizeof(Sjmp));
 
-                //func_override((void*)addr, (void*)CoSetProxyBlanket);
 		t_ptr addr_start = (addr - PAGESIZE-1) & ~(PAGESIZE-1);
 		t_ptr addr_end   = (addr + PAGESIZE-1) & ~(PAGESIZE-1);
 		mprotect((void*)addr_start, addr_end-addr_start , PROT_READ|PROT_WRITE|PROT_EXEC);
