@@ -35,6 +35,7 @@ if (NOT CMAKE_C_COMPILER MATCHES "i686-w64-mingw32-gcc"
     device.cpp jumper.h)
   set_target_properties(koku-xinput-wine PROPERTIES CXX_STANDARD 11 PREFIX "")
   target_include_directories(koku-xinput-wine PRIVATE
+     /opt/wine-staging/include/wine/windows
      /usr/include/wine-development/windows
      /usr/include/wine/windows)
   target_compile_options(koku-xinput-wine PRIVATE -Wno-ignored-attributes
