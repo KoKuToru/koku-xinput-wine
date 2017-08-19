@@ -1,23 +1,18 @@
+#ifndef KOKU_MAIN_H
+#define KOKU_MAIN_H
+
 #include <dlfcn.h>
-#include <unistd.h>
-#include <sys/mman.h>
-#include <limits.h>
-#ifndef PAGESIZE
-#define PAGESIZE 4096
-#endif
 
-struct __attribute__((packed)) Sjmp
-{
-	unsigned char op;
-	void* value;
+#include "jumper.h"
 
-	Sjmp(void* value):
-		op(0xE9), value((void*)((long)value-(long)&op-5))
-	{
-		/*
-		 This JITs a X86 jmp instruction
-		 */
-	}
-};
+#define debug(message, ...)                                                    \
+  if (getenv("KOKU_XINPUT_DEBUG") != nullptr)                                  \
+    std::printf("koku-xinput-wine: [%d] %s:%d %s " message "\n", getpid(),     \
+                __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__);
 
-extern bool debug;
+namespace koku {
+void XInputInit(void *handle);
+void DeviceInit(void *handle);
+}; // namespace koku
+
+#endif // KOKU_MAIN_H

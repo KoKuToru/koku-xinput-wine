@@ -1,44 +1,55 @@
-PROJECT(koku-xinput-wine)
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.6)
+project(koku-xinput-wine)
 
-# Check for C++11
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-else()
-    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
-endif()
+if (NOT CMAKE_C_COMPILER MATCHES "i686-w64-mingw32-gcc"
+    AND NOT CMAKE_C_COMPILER MATCHES "x86_64-w64-mingw32-gcc")
+  find_program(X86_64_MINGW64_GCC x86_64-w64-mingw32-gcc)
+  if (X86_64_MINGW64_GCC)
+    execute_process(
+      COMMAND ${CMAKE_COMMAND}
+        -B${CMAKE_BINARY_DIR}/x86_64-w64-mingw32
+        -H${CMAKE_SOURCE_DIR}
+        -DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/Toolchain-Windows-x86_64.cmake)
+    add_custom_target(x86_64-w64-mingw32-tests ALL
+      COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/x86_64-w64-mingw32)
+  endif()
 
-# Check for 32bit version
-option(BUILD_M32 "Build library in 32Bit mode" ON)
-if(BUILD_M32)
+  find_program(I686_MINGW64_GCC i686-w64-mingw32-gcc)
+  if (I686_MINGW64_GCC)
+    execute_process(
+      COMMAND ${CMAKE_COMMAND}
+        -B${CMAKE_BINARY_DIR}/i686-w64-mingw32
+        -H${CMAKE_SOURCE_DIR}
+        -DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/Toolchain-Windows-i686.cmake)
+    add_custom_target(i686-w64-mingw32-tests ALL
+      COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/i686-w64-mingw32)
+  endif()
+
+  option(BUILD_M32 "Build library in 32Bit mode" ON)
+  if(BUILD_M32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
-endif()
+    add_compile_options(-m32)
+  endif()
 
-ADD_LIBRARY(koku-xinput-wine SHARED main.cpp xinput.cpp device.cpp)
+  add_library(koku-xinput-wine SHARED main.h main.cpp xinput.cpp
+    device.cpp jumper.h)
+  set_target_properties(koku-xinput-wine PROPERTIES CXX_STANDARD 11 PREFIX "")
+  target_include_directories(koku-xinput-wine PRIVATE
+     /opt/wine-staging/include/wine/windows
+     /usr/include/wine-development/windows
+     /usr/include/wine/windows)
+  target_compile_options(koku-xinput-wine PRIVATE -Wno-ignored-attributes
+    -Wno-subobject-linkage)
 
-# Pull in pkgconfig
-include(FindPkgConfig)
-
-# - Try to find SDL
-# Once done this will define
-#
-# SDL_FOUND - system has libSDL
-# SDL_INCLUDE_DIRS - the libSDL include directory
-# SDL_LIBRARIES - The libSDL libraries
-if(PKG_CONFIG_FOUND)
-    pkg_check_modules (SDL2 REQUIRED sdl2)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(SDL2 REQUIRED sdl2)
+  target_include_directories(koku-xinput-wine PRIVATE ${SDL2_INCLUDE_DIR})
+  target_link_libraries(koku-xinput-wine PRIVATE ${SDL2_LIBRARIES})
 else()
-    find_package(SDL2 REQURIED)
+  add_executable(ditest test/ditest.cpp)
+  target_link_libraries(ditest PRIVATE -static -static-libgcc
+    dinput dinput8 dxguid user32 ole32 oleaut32)
+  add_executable(xitest test/xitest.cpp)
+  target_link_libraries(xitest PRIVATE -static -static-libgcc
+    xinput)
 endif()
-
-include_directories(${SDL2_INCLUDE_DIR})
-
-# Link SDL
-target_link_libraries(koku-xinput-wine ${SDL2_LIBRARIES})
-set_target_properties(koku-xinput-wine PROPERTIES PREFIX "")
-
