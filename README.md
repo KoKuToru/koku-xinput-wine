@@ -1,14 +1,12 @@
 koku-xinput-wine
 ================
 
-Adds xinput support to wine, without changing the source of wine.
-Modified to use SDL2 gamepad mappings
+Adds xinput support to wine, without changing the source of wine.  
+Modified to use SDL2 gamepad mappings.
 
 Install
 ---------------------
 If you are on 64Bit you will need 32Bit tool-chain (multilib)
-
-Because this will generate 32Bit code, no 64Bit support !
 
 It depens on SDL2-Librarys.
      
@@ -18,6 +16,11 @@ It depens on SDL2-Librarys.
      [user@host code]$make
      
 After this there will be a 'koku-xinput-wine.so' in the folder.
+
+64-Bit Version
+---------------------
+
+Same as normal just initialize with `cmake -DBUILD_M32=OFF .`
 
 Usage
 ---------------------
