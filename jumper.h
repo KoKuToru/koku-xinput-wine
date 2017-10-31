@@ -14,6 +14,7 @@ namespace koku {
 template <typename F> struct jumper {
   F *src = nullptr;
   F *dst = nullptr;
+  bool installed = false;
 
 #if UINTPTR_MAX == UINT64_MAX
   std::array<uint8_t, 12> header = {{0x48, 0xb8, 0x00, 0x00, 0x00, 0x00,
@@ -45,31 +46,35 @@ template <typename F> struct jumper {
 #error "Unsupported architecture"
 #endif
 
-    unprotect();
     install();
   }
 
-  void unprotect() {
+  void swap_header() {
     assert(src != nullptr);
+
     auto pagesize = sysconf(_SC_PAGESIZE);
-    auto address = (void *)((uintptr_t)src & ~(pagesize - 1));
-    auto result =
-        mprotect(address, header.size(), PROT_READ | PROT_WRITE | PROT_EXEC);
-    assert(result == 0);
+    assert((pagesize & (pagesize - 1)) == 0);
+
+    auto address = (uintptr_t)src & ~(pagesize - 1);
+    auto length = (uintptr_t)src + header.size() - address;
+    int rc = mprotect((void *)address, length, PROT_READ|PROT_WRITE|PROT_EXEC);
+    assert(rc == 0);
+
+    auto tmp = header;
+    std::memcpy(&header[0], (const void *)src, header.size());
+    std::memcpy((void *)src, &tmp[0], tmp.size());
   }
 
   void install() {
-    assert(src != nullptr);
-    auto tmp = header;
-    std::memcpy(&header[0], (const void *)src, header.size());
-    std::memcpy((void *)src, &tmp[0], tmp.size());
+    assert(!installed);
+    swap_header();
+    installed = true;
   }
 
   void uninstall() {
-    assert(src != nullptr);
-    auto tmp = header;
-    std::memcpy(&header[0], (const void *)src, header.size());
-    std::memcpy((void *)src, &tmp[0], tmp.size());
+    assert(installed);
+    swap_header();
+    installed = false;
   }
 
   struct scoped_uninstall {
