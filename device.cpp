@@ -4,8 +4,8 @@
 #define CINTERFACE
 #define INITGUID
 
-#include "objbase.h"
-#include "wbemcli.h"
+#include <objbase.h>
+#include <wbemcli.h>
 
 namespace koku {
 unsigned short wine_gamepad[] = {'V', 'I', 'D', '_', '3', 'E', 'D', '9',
