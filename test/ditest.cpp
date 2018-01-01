@@ -144,7 +144,7 @@ BOOL CALLBACK EnumJoysticksCallback(const DIDEVICEINSTANCE *pdidInstance,
                                     VOID *pContext) {
   HRESULT hr;
 
-  if (IsXInputDevice(&pdidInstance->guidProduct))
+  if (!IsXInputDevice(&pdidInstance->guidProduct))
     return DIENUM_CONTINUE;
 
   // Device is verified not XInput, so add it to the list of DInput devices
@@ -190,7 +190,7 @@ int main() {
   g_pDI->EnumDevices(DI8DEVCLASS_GAMECTRL, EnumJoysticksCallback, NULL,
                      DIEDFL_ATTACHEDONLY);
 
-  if (!g_pDI) {
+  if (!g_pJoystick) {
     printf("Couldn't find a joystick.\n");
     shutdown();
     return 10;
