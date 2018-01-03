@@ -47,21 +47,23 @@ HRESULT STDMETHODCALLTYPE IEnumWbemClassObject_Next_Koku(
     IEnumWbemClassObject *This, LONG lTimeout, ULONG uCount,
     IWbemClassObject **apObjects, ULONG *puReturned) {
   debug("");
-  auto result = IEnumWbemClassObject_Next_Jumper(This, lTimeout, uCount,
-                                                 apObjects, puReturned);
 
-  if (*puReturned == 0) {
-    auto wbemClassObject = new IWbemClassObject{};
-    wbemClassObject->lpVtbl = new IWbemClassObjectVtbl{};
+  if (uCount == 0)
+    return WBEM_S_FALSE;
 
-    wbemClassObject->lpVtbl->Get = &IWbemClassObject_Get;
-    wbemClassObject->lpVtbl->Release = &IWbemClassObject_Release;
+  if (puReturned == nullptr || *puReturned != 0)
+    return WBEM_E_INVALID_PARAMETER;
 
-    *puReturned = 1;
-    *apObjects = wbemClassObject;
-  }
+  auto wbemClassObject = new IWbemClassObject{};
+  wbemClassObject->lpVtbl = new IWbemClassObjectVtbl{};
 
-  return result;
+  wbemClassObject->lpVtbl->Get = &IWbemClassObject_Get;
+  wbemClassObject->lpVtbl->Release = &IWbemClassObject_Release;
+
+  *puReturned = 1;
+  *apObjects = wbemClassObject;
+
+  return WBEM_S_FALSE;
 }
 
 koku::jumper<std::decay<decltype(*IWbemServicesVtbl::CreateInstanceEnum)>::type>
@@ -101,8 +103,9 @@ HRESULT STDMETHODCALLTYPE IWbemLocator_ConnectServer_Koku(
       strAuthority, pCtx, ppNamespace);
 
   auto wbemServices = *ppNamespace;
-  if (wbemServices != nullptr && IWbemServices_CreateInstanceEnum_Jumper.src !=
-                                     wbemServices->lpVtbl->CreateInstanceEnum) {
+  if (wbemServices != nullptr &&
+      IWbemServices_CreateInstanceEnum_Jumper.src !=
+          wbemServices->lpVtbl->CreateInstanceEnum) {
     IWbemServices_CreateInstanceEnum_Jumper =
         koku::make_jumper(wbemServices->lpVtbl->CreateInstanceEnum,
                           &IWbemServices_CreateInstanceEnum_Koku);
@@ -123,8 +126,9 @@ HRESULT WINAPI CoCreateInstance(REFCLSID rclsid, LPUNKNOWN pUnkOuter,
 
   if (std::memcmp(&iid, &IID_IWbemLocator, sizeof(iid)) == 0) {
     auto wbemLocator = *(IWbemLocator **)ppv;
-    if (wbemLocator != nullptr && IWbemLocator_ConnectServer_Jumper.src !=
-                                      wbemLocator->lpVtbl->ConnectServer) {
+    if (wbemLocator != nullptr &&
+        IWbemLocator_ConnectServer_Jumper.src !=
+            wbemLocator->lpVtbl->ConnectServer) {
       IWbemLocator_ConnectServer_Jumper = koku::make_jumper(
           wbemLocator->lpVtbl->ConnectServer, &IWbemLocator_ConnectServer_Koku);
       debug("found IWbemLocator_ConnectServer at %p, redirecting it to %p",
