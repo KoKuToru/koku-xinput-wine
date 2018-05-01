@@ -317,8 +317,8 @@ XInputGetBatteryInformation(DWORD dwUserIndex, BYTE devType,
 }
 
 koku::jumper<decltype(XInputGetStateEx)> XInputGetStateExJumper;
-DWORD WINAPI XInputGetStateEx(DWORD dwUserIndex, XINPUT_STATE_EX *pState) {
-  return koku::XInputGetState(dwUserIndex, (XINPUT_STATE *)pState);
+DWORD WINAPI XInputGetStateEx(DWORD dwUserIndex, XINPUT_STATE *pState) {
+  return koku::XInputGetState(dwUserIndex, pState);
 }
 
 void XInputInit(void *handle) {
