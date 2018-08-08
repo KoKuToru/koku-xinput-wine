@@ -13,7 +13,7 @@ unsigned short wine_gamepad[] = {'V', 'I', 'D', '_', '3', 'E', 'D', '9',
                                  '7', '&', 'I', 'G', '_', '0', '0'};
 unsigned short x360_gamepad[] = {'V', 'I', 'D', '_', '0', '4', '5', 'E',
                                  '&', 'P', 'I', 'D', '_', '0', '2', '8',
-                                 'E', '&', 'I', 'G', '_', '0', '0'};
+                                 'F', '&', 'I', 'G', '_', '0', '0'};
 
 HRESULT STDMETHODCALLTYPE IWbemClassObject_Get(IWbemClassObject *This,
                                                LPCWSTR wszName, LONG lFlags,
